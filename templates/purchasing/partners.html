@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>{{ title }}</h3>
+  <p class="text-subtitle text-muted">{{ subtitle }}</p>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h4 class="card-title mb-0">Partner Directory</h4>
+      <small class="text-muted">All procurement partners are listed here. Use the modal to create or edit a supplier/client.</small>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      {% if current_user.has_permission('purchasing:partner_manage') or current_user.has_permission('admin:settings') %}
+        <button type="button" class="btn btn-primary" data-partner-modal-trigger data-partner-action="create_partner" data-partner-type="supplier" data-partner-title="Create Supplier">New Supplier</button>
+        <button type="button" class="btn btn-outline-primary" data-partner-modal-trigger data-partner-action="create_partner" data-partner-type="customer" data-partner-title="Create Client">New Client</button>
+      {% endif %}
+      {% if show_all %}
+        <span class="badge bg-light-primary align-self-center">Showing all partners</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="card mb-4">
+      <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-center">
+          <div class="col-12 col-md-8">
+            <input class="form-control" name="search" value="{{ search }}" placeholder="Search name, email, phone, or address">
+          </div>
+          <div class="col-12 col-md-4 d-flex gap-2">
+            <button class="btn btn-outline-primary flex-grow-1">Search</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for(request.endpoint) }}">Reset</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Scope</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for partner in partners %}
+            <tr>
+              <td class="fw-semibold">{{ partner.name }}</td>
+              <td><span class="badge bg-light-primary">{{ partner.partner_type|replace('_', ' ')|title }}</span></td>
+              <td>{{ partner.scope_type|title }}</td>
+              <td>{{ partner.email or '-' }}</td>
+              <td>{{ partner.phone or '-' }}</td>
+              <td>{{ partner.address or '-' }}</td>
+              <td class="text-end">
+                {% if current_user.has_permission('purchasing:partner_manage') or current_user.has_permission('admin:settings') %}
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    data-partner-modal-trigger
+                    data-partner-action="update_partner"
+                    data-partner-id="{{ partner.id }}"
+                    data-partner-name="{{ partner.name|e }}"
+                    data-partner-email="{{ partner.email|default('', true)|e }}"
+                    data-partner-phone="{{ partner.phone|default('', true)|e }}"
+                    data-partner-address="{{ partner.address|default('', true)|e }}"
+                    data-partner-type="{{ partner.partner_type }}"
+                    data-partner-scope="{{ partner.scope_type }}"
+                    data-partner-title="Edit Partner"
+                  >
+                    Edit
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">No partners found.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+        <form method="post" id="partnerModalForm" data-confirm="Save this partner record?">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title mb-0" id="partnerModalTitle">Create Partner</h5>
+            <small class="text-muted">Create or update supplier and client records from one place.</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="action" id="partnerModalAction" value="create_partner">
+          <input type="hidden" name="partner_id" id="partnerModalId" value="">
+          <input type="hidden" name="address" id="partnerModalAddress" value="">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Name</label>
+              <input class="form-control" name="name" id="partnerModalName" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Partner Type</label>
+              <select class="form-select" name="partner_type" id="partnerModalType">
+                {% for value, label in partner_type_options %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Email</label>
+              <input class="form-control" name="email" id="partnerModalEmail" type="email">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Phone</label>
+              <input class="form-control" name="phone" id="partnerModalPhone">
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Scope</label>
+              <select class="form-select" name="scope_type" id="partnerModalScope">
+                <option value="local">Local</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-4" data-address-panel="local">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <h5 class="card-title mb-0">Local Address</h5>
+                <small class="text-muted">Search and select a structured address to avoid input mistakes.</small>
+              </div>
+              <span class="badge bg-light-info">Select2</span>
+            </div>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Country</label>
+                <select class="form-select" name="country" id="partnerModalCountry" data-select2-address data-placeholder="Philippines">
+                  <option value="Philippines" selected>Philippines</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Province</label>
+                <select class="form-select" name="province" id="partnerModalProvince" data-select2-address data-placeholder="Search province"></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">City</label>
+                <select class="form-select" name="city" id="partnerModalCity" data-select2-address data-placeholder="Search city or municipality" disabled></select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Barangay</label>
+                <select class="form-select" name="barangay" id="partnerModalBarangay" data-select2-address data-placeholder="Search barangay" disabled></select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Street / Building</label>
+                <input class="form-control" name="street" id="partnerModalStreet" placeholder="Street name, building, floor, unit">
+              </div>
+            </div>
+            <div class="erp-muted-box mt-3">
+              <small class="text-muted d-block mb-1">Generated address</small>
+              <div id="partnerModalLocalPreview">Select the location fields to generate the final address.</div>
+            </div>
+          </div>
+
+          <div class="mt-4 d-none" data-address-panel="private">
+            <label class="form-label">Private Address</label>
+            <textarea class="form-control" name="private_address" id="partnerModalPrivateAddress" rows="4" placeholder="Enter the private or overseas address"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary" id="partnerModalSubmit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

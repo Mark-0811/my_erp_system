@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>Purchase Request {{ requisition.serial }}</h3>
+  <p class="text-subtitle text-muted">Review the saved partner snapshot and catalog-based item lines.</p>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-xl-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">Request Summary</h4>
+        <span class="badge bg-light-primary">{{ requisition.status }}</span>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5 text-muted">Serial</dt>
+          <dd class="col-7">{{ requisition.serial }}</dd>
+          <dt class="col-5 text-muted">Partner Type</dt>
+          <dd class="col-7">{{ requisition.partner_type|default('supplier')|title }}</dd>
+          <dt class="col-5 text-muted">Partner</dt>
+          <dd class="col-7">{{ requisition.partner_name_snapshot or 'N/A' }}</dd>
+          <dt class="col-5 text-muted">Requested By</dt>
+          <dd class="col-7">{{ requisition.requested_by.full_name if requisition.requested_by else 'Unknown' }}</dd>
+          <dt class="col-5 text-muted">Estimated Total</dt>
+          <dd class="col-7 fw-semibold">{{ "%.2f"|format(requisition.total_estimated_cost) }}</dd>
+        </dl>
+        {% if requisition.status == 'Draft' and (current_user.has_permission('purchasing:create') or current_user.has_permission('admin:settings')) %}
+          <form method="post" action="{{ url_for('purchasing.confirm_requisition', requisition_id=requisition.id) }}" class="mt-3" data-confirm="Confirm this request and create a purchase order draft?">
+            <button class="btn btn-primary w-100">Confirm</button>
+          </form>
+        {% endif %}
+        {% if linked_po %}
+          <div class="alert alert-light-primary mt-3 mb-0">
+            Linked Purchase Order: <strong>{{ linked_po.serial }}</strong> <span class="badge bg-light-primary ms-2">{{ linked_po.status }}</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Saved Address</h4>
+      </div>
+      <div class="card-body">
+        <p class="mb-0 text-muted">{{ requisition.partner_address_snapshot or 'No address snapshot was saved.' }}</p>
+      </div>
+    </div>
+
+    <a class="btn btn-outline-secondary mt-4" href="{{ url_for('purchasing.dashboard') }}">Back to Purchase Requests</a>
+    {% if linked_po %}
+      <a class="btn btn-primary mt-4 ms-2" href="{{ url_for('purchasing.purchase_orders') }}">Open Purchase Orders</a>
+    {% endif %}
+  </div>
+
+  <div class="col-12 col-xl-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">Item Lines</h4>
+        <span class="text-muted">{{ requisition.line_items|length }} line(s)</span>
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th>UoM</th>
+              <th class="text-end">Qty</th>
+              <th class="text-end">Unit Price</th>
+              <th class="text-end">Line Total</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line in requisition.line_items %}
+              <tr>
+                <td>{{ line.product_sku_snapshot }}</td>
+                <td>
+                  <div class="fw-semibold">{{ line.product_name_snapshot }}</div>
+                  <small class="text-muted">Product ID {{ line.product_id }}</small>
+                </td>
+                <td>{{ line.uom_snapshot }}</td>
+                <td class="text-end">{{ "%.2f"|format(line.quantity) }}</td>
+                <td class="text-end">{{ "%.4f"|format(line.unit_price) }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(line.line_total) }}</td>
+                <td>{{ line.notes or '-' }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="7" class="text-muted">No line items found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

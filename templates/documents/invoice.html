@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ invoice.invoice_ref }} - Supplier Bill</title>
+  <style>
+    {{ layout.custom_css if layout else "" }}
+    body { margin: 0; padding: 0; background: #f7f9fc; color: #1f2937; font-family: Arial, sans-serif; }
+    .bill-shell { max-width: 1120px; margin: 0 auto; padding: 24px; }
+    .bill-hero { background: linear-gradient(135deg, #435ebe, #5a67d8); color: #fff; border-radius: 18px; padding: 24px; margin-bottom: 20px; box-shadow: 0 18px 40px rgba(67, 94, 190, 0.18); }
+    .bill-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; margin-top: 16px; }
+    .bill-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06); padding: 20px; }
+    .bill-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; }
+    .muted { color: #6b7280; }
+    .pill { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .7rem; border-radius: 999px; font-size: .875rem; font-weight: 600; }
+    .pill-paid { background: rgba(34, 197, 94, .15); color: #15803d; }
+    .pill-unpaid { background: rgba(239, 68, 68, .12); color: #b91c1c; }
+    table { width: 100%; border-collapse: collapse; margin-top: 18px; }
+    th, td { border-bottom: 1px solid #e5e7eb; padding: 10px 8px; text-align: left; }
+    .text-end { text-align: right; }
+    .summary { margin-top: 20px; display: flex; justify-content: flex-end; }
+    .summary-box { min-width: 280px; border: 1px solid #e5e7eb; padding: 16px; border-radius: 12px; background: #fff; }
+    .footer { margin-top: 28px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 0.9rem; color: #6b7280; }
+    .btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 16px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-primary { background: #435ebe; color: #fff; }
+    .btn-outline { background: #fff; color: #435ebe; border: 1px solid #cdd7f5; }
+    .btn-success { background: #16a34a; color: #fff; }
+    .btn-secondary { background: #e5e7eb; color: #334155; }
+  </style>
+</head>
+<body>
+  <div class="bill-shell">
+    <div class="bill-hero">
+      <div class="d-flex" style="display:flex; justify-content:space-between; gap:16px; align-items:flex-start; flex-wrap:wrap;">
+        <div>
+          <div class="pill {% if invoice.state == 'Settled' %}pill-paid{% else %}pill-unpaid{% endif %}">
+            {% if invoice.state == 'Settled' %}Paid{% else %}Unpaid{% endif %}
+          </div>
+          <h1 style="margin:14px 0 6px;">{{ invoice.invoice_ref }}</h1>
+          <div class="muted" style="color: rgba(255,255,255,.82);">Supplier bill linked to purchase order {{ invoice.po.serial if invoice.po else '-' }}</div>
+        </div>
+        <div class="bill-actions">
+          <a class="btn btn-outline" target="_blank" rel="noopener" href="{{ url_for('accounting.print_invoice', invoice_id=invoice.id) }}?format=html">Open Invoice Print</a>
+          <a class="btn btn-outline" target="_blank" rel="noopener" href="{{ url_for('accounting.print_receipt', invoice_id=invoice.id) }}?format=html">Open Receipt Print</a>
+          {% if invoice.state == 'Settled' %}
+            <form method="post" data-confirm="Mark this supplier bill as unpaid?">
+              <input type="hidden" name="action" value="mark_unpaid">
+              <button class="btn btn-secondary" type="submit">Mark Unpaid</button>
+            </form>
+          {% else %}
+            <form method="post" data-confirm="Mark this supplier bill as paid?">
+              <input type="hidden" name="action" value="mark_paid">
+              <button class="btn btn-success" type="submit">Mark Paid</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="bill-card">
+      <div class="bill-grid">
+        <div>
+          <h2 style="margin:0 0 8px;">Bill Summary</h2>
+          <div class="muted">Issue date: {{ invoice.issue_date }}</div>
+          <div class="muted">Due date: {{ invoice.due_date }}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="muted">Vendor</div>
+          <div><strong>{{ invoice.po.vendor_name if invoice.po else "-" }}</strong></div>
+          <div class="muted" style="margin-top: 10px;">Purchase Order</div>
+          <div><strong>{{ invoice.po.serial if invoice.po else "-" }}</strong></div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th class="text-end">Line Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if invoice.po %}
+            {% for line in invoice.po.line_items %}
+              <tr>
+                <td>{{ line.product.name }}</td>
+                <td>{{ "%.2f"|format(line.quantity) }}</td>
+                <td>{{ "%.4f"|format(line.unit_price) }}</td>
+                <td class="text-end">{{ "%.2f"|format(line.line_total) }}</td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4">No line items available.</td></tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="4">No purchase order linked.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div class="summary-box">
+          <div class="d-flex justify-content-between">
+            <span>Bill total</span>
+            <strong>{{ "%.2f"|format(invoice.amount_total) }}</strong>
+          </div>
+          <div class="d-flex justify-content-between" style="margin-top: 10px;">
+            <span>Status</span>
+            <strong>{{ invoice.state }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        {{ layout.footer_text if layout else "Generated by Inventory System" }}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

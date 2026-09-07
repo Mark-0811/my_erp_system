@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>Purchase Orders</h3>
+  <p class="text-subtitle text-muted">Approve requisitions, review purchase orders, and mark them done before inventory receiving.</p>
+{% endblock %}
+{% block page_actions %}
+  <div class="d-flex justify-content-md-end">
+    <div class="badge bg-light-primary align-self-start">Next serial: {{ next_purchase_order_serial }}</div>
+  </div>
+{% endblock %}
+{% block content %}
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-12 col-md-7">
+        <input class="form-control" name="search" value="{{ search }}" placeholder="Search PO serial, partner, or status">
+      </div>
+      <div class="col-6 col-md-3">
+        <select class="form-select" name="status">
+          <option value="">All statuses</option>
+          {% for value in ["Draft", "Confirmed", "Approved", "Done", "Received"] %}
+            <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ value }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2 d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1">Search</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('purchasing.purchase_orders') }}">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h4 class="card-title mb-0">Purchase Order Register</h4>
+  </div>
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>Serial</th>
+          <th>Partner</th>
+          <th>Vendor</th>
+          <th>Lines</th>
+          <th>Status</th>
+          <th class="text-end">Total</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for po in purchase_orders %}
+          <tr>
+            <td class="fw-semibold">{{ po.serial }}</td>
+            <td>
+              {{ po.partner.name if po.partner else 'Unassigned' }}
+              <div class="small text-muted">{{ po.partner.partner_type|title if po.partner else 'No partner' }}</div>
+            </td>
+            <td>{{ po.vendor_name }}</td>
+            <td>{{ po.line_items|length }}</td>
+            <td><span class="badge bg-light-primary">{{ po.status }}</span></td>
+            <td class="text-end">{{ "%.2f"|format(po.total_amount) }}</td>
+            <td class="text-end">
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Actions
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="{{ url_for('purchasing.purchase_order_detail', po_id=po.id) }}">Open</a></li>
+                  {% if po.status in ["Draft", "Confirmed"] %}
+                    <li>
+                      <form method="post" class="m-0" action="{{ url_for('purchasing.approve_purchase_order', po_id=po.id) }}" data-confirm="Approve {{ po.serial }}?">
+                        <button class="dropdown-item w-100 text-start" type="submit">Approve</button>
+                      </form>
+                    </li>
+                  {% endif %}
+                  {% if po.status in ["Draft", "Confirmed", "Approved"] %}
+                    <li>
+                      <form method="post" class="m-0" action="{{ url_for('purchasing.purchase_purchase_order', po_id=po.id) }}" data-confirm="Purchase {{ po.serial }} now? This will mark it done.">
+                        <button class="dropdown-item w-100 text-start text-primary" type="submit">Purchase?</button>
+                      </form>
+                    </li>
+                  {% endif %}
+                </ul>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">No purchase orders found.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

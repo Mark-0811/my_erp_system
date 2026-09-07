@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>Supplier Bills</h3>
+  <p class="text-subtitle text-muted">Bills created from received purchase orders and their print layouts.</p>
+{% endblock %}
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Total Bills</small>
+            <h4 class="mb-0">{{ invoices|length }}</h4>
+          </div>
+          <div class="stats-icon purple"><i class="bi bi-journal-text"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Unpaid</small>
+            <h4 class="mb-0">{{ invoices|selectattr('state', 'equalto', 'Unpaid')|list|length }}</h4>
+          </div>
+          <div class="stats-icon red"><i class="bi bi-exclamation-circle"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Settled</small>
+            <h4 class="mb-0">{{ invoices|selectattr('state', 'equalto', 'Settled')|list|length }}</h4>
+          </div>
+          <div class="stats-icon green"><i class="bi bi-check-circle"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Print Layouts</small>
+            <h4 class="mb-0">{{ layouts|length }}</h4>
+          </div>
+          <div class="stats-icon blue"><i class="bi bi-printer"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" class="row g-2 align-items-center">
+      <div class="col-12 col-md-8">
+        <input class="form-control" name="search" value="{{ search }}" placeholder="Search supplier bills">
+      </div>
+      <div class="col-6 col-md-2">
+        <select class="form-select" name="status">
+          <option value="">All states</option>
+          <option value="Unpaid" {% if status == 'Unpaid' %}selected{% endif %}>Unpaid</option>
+          <option value="Settled" {% if status == 'Settled' %}selected{% endif %}>Settled</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2 d-flex gap-2">
+        <button class="btn btn-primary w-100">Filter</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('accounting.dashboard') }}">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12 col-xl-7">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Supplier Bills</h4>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>PO</th>
+                <th>State</th>
+                <th class="text-end">Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for invoice in invoices %}
+                <tr>
+                  <td>{{ invoice.invoice_ref }}</td>
+                  <td>{{ invoice.po.serial if invoice.po else "-" }}</td>
+                  <td>
+                    {% if invoice.state == 'Settled' %}
+                      <span class="badge bg-light-success">Paid</span>
+                    {% else %}
+                      <span class="badge bg-light-danger">Unpaid</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-end">{{ "%.2f"|format(invoice.amount_total) }}</td>
+                  <td class="text-end">
+                    <div class="d-flex gap-2 justify-content-end">
+                      <a class="btn btn-sm btn-outline-primary" target="_blank" rel="noopener" href="{{ url_for('accounting.print_invoice', invoice_id=invoice.id) }}?format=html">Invoice</a>
+                      <a class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener" href="{{ url_for('accounting.print_receipt', invoice_id=invoice.id) }}?format=html">Receipt</a>
+                      <a class="btn btn-sm btn-outline-dark" href="{{ url_for('accounting.invoice_detail', invoice_id=invoice.id) }}">Open</a>
+                      <form method="post" action="{{ url_for('accounting.invoice_detail', invoice_id=invoice.id) }}" data-confirm="{% if invoice.state == 'Settled' %}Mark this supplier bill as unpaid?{% else %}Mark this supplier bill as paid?{% endif %}">
+                        <input type="hidden" name="action" value="{% if invoice.state == 'Settled' %}mark_unpaid{% else %}mark_paid{% endif %}">
+                        <button class="btn btn-sm {% if invoice.state == 'Settled' %}btn-secondary{% else %}btn-success{% endif %}">
+                          {% if invoice.state == 'Settled' %}Unpaid{% else %}Paid{% endif %}
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              {% else %}
+                <tr><td colspan="5" class="text-center text-muted py-4">No supplier bills found.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-5">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Print Layouts</h4>
+      </div>
+      <div class="card-body">
+        {% for layout in layouts %}
+          <div class="d-flex align-items-start justify-content-between py-2 border-bottom">
+            <div>
+              <div class="fw-semibold">{{ layout.target_type }}</div>
+              <div class="text-muted small">{{ layout.footer_text }}</div>
+            </div>
+          </div>
+        {% else %}
+          <div class="text-muted">No layouts configured.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

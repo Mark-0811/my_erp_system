@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>Purchase Requests</h3>
+  <p class="text-subtitle text-muted">Supplier and client requests, address snapshots, and catalog-based item lines in one place.</p>
+{% endblock %}
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Suppliers</small>
+            <h4 class="mb-0">{{ stats.suppliers }}</h4>
+          </div>
+          <div class="stats-icon blue"><i class="bi bi-truck"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Clients</small>
+            <h4 class="mb-0">{{ stats.clients }}</h4>
+          </div>
+          <div class="stats-icon red"><i class="bi bi-people"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Purchase Requests</small>
+            <h4 class="mb-0">{{ stats.requests }}</h4>
+          </div>
+          <div class="stats-icon purple"><i class="bi bi-receipt"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Products</small>
+            <h4 class="mb-0">{{ stats.products }}</h4>
+          </div>
+          <div class="stats-icon green"><i class="bi bi-box-seam"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" class="row g-3 align-items-center">
+      <div class="col-12 col-md-5">
+        <input class="form-control" name="search" value="{{ search }}" placeholder="Search requests, partners, or addresses">
+      </div>
+      <div class="col-6 col-md-2">
+        <select class="form-select" name="partner_type">
+          <option value="">All partner types</option>
+          <option value="supplier" {% if partner_type == 'supplier' %}selected{% endif %}>Supplier</option>
+          <option value="customer" {% if partner_type == 'customer' %}selected{% endif %}>Client</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <select class="form-select" name="status">
+          <option value="">All statuses</option>
+          <option value="Draft" {% if status == 'Draft' %}selected{% endif %}>Draft</option>
+          <option value="Submitted" {% if status == 'Submitted' %}selected{% endif %}>Submitted</option>
+          <option value="Approved" {% if status == 'Approved' %}selected{% endif %}>Approved</option>
+          <option value="Received" {% if status == 'Received' %}selected{% endif %}>Received</option>
+        </select>
+      </div>
+      <div class="col-12 col-md-3 d-flex gap-2">
+        <button class="btn btn-primary flex-grow-1">Filter</button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('purchasing.dashboard') }}">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="card-title mb-0">Create Purchase Request</h4>
+          <small class="text-muted">Choose a supplier or client, auto-fill the address, then add as many item rows as needed.</small>
+        </div>
+        <span class="badge bg-light-primary">Editable PR</span>
+      </div>
+      <div class="card-body">
+        <form method="post" data-pr-form data-confirm="Create this purchase request with the selected partner and item lines?">
+          <input type="hidden" name="action" value="create_requisition">
+          <input type="hidden" name="status" value="Draft">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Request Serial</label>
+              <input class="form-control" value="{{ next_request_serial }}" readonly>
+              <small class="text-muted">Auto-generated from the configured acronym.</small>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Partner Type</label>
+              <select class="form-select" name="partner_type" data-pr-partner-type>
+                <option value="supplier">Supplier</option>
+                <option value="customer">Client</option>
+              </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <div class="w-100 text-end">
+                <span class="badge bg-light-primary">Status: Draft</span>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="row g-3">
+                <div class="col-md-6" data-pr-partner-panel="supplier">
+                  <label class="form-label">Supplier</label>
+                  <select class="form-select" name="supplier_partner_id" data-pr-partner-select>
+                    <option value="">Select supplier</option>
+                    {% for partner in suppliers %}
+                      <option value="{{ partner.id }}" data-address="{{ partner.address or '' }}" data-name="{{ partner.name }}">
+                        {{ partner.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-md-6 d-none" data-pr-partner-panel="client">
+                  <label class="form-label">Client</label>
+                  <select class="form-select" name="client_partner_id" data-pr-partner-select>
+                    <option value="">Select client</option>
+                    {% for partner in clients %}
+                      <option value="{{ partner.id }}" data-address="{{ partner.address or '' }}" data-name="{{ partner.name }}">
+                        {{ partner.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Request Address</label>
+                  <textarea class="form-control" name="partner_address" rows="3" data-pr-address placeholder="Auto-filled from the selected supplier or client"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                  <h5 class="mb-1">Item Lines</h5>
+                  <small class="text-muted">Select products from the catalog. SKU, name, UoM, and default price fill automatically.</small>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm" data-pr-add-line>Add Line</button>
+              </div>
+              <div class="d-grid gap-3" data-pr-line-body></div>
+
+              <template id="pr-line-template">
+                <div class="card mb-0" data-pr-line>
+                  <div class="card-body">
+                    <div class="row g-3 align-items-end">
+                      <div class="col-12 col-lg-4">
+                        <label class="form-label">Product</label>
+                        <select class="form-select" name="line_product_id" data-pr-product-select>
+                          <option value="">Select product</option>
+                          {% for product in products %}
+                            <option value="{{ product.id }}" data-sku="{{ product.sku }}" data-name="{{ product.name }}" data-uom="{{ product.uom }}" data-price="{{ product.average_cost }}">
+                              {{ product.sku }} - {{ product.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-6 col-lg-2">
+                        <label class="form-label">SKU</label>
+                        <input class="form-control" name="line_sku_snapshot" readonly>
+                      </div>
+                      <div class="col-6 col-lg-2">
+                        <label class="form-label">UoM</label>
+                        <input class="form-control" name="line_uom_snapshot" readonly>
+                      </div>
+                      <div class="col-6 col-lg-1">
+                        <label class="form-label">Qty</label>
+                        <input class="form-control" name="line_quantity" type="number" step="0.01" min="0">
+                      </div>
+                      <div class="col-6 col-lg-2">
+                        <label class="form-label">Unit Price</label>
+                        <input class="form-control" name="line_unit_price" type="number" step="0.0001" min="0">
+                      </div>
+                      <div class="col-6 col-lg-1">
+                        <label class="form-label">Total</label>
+                        <input class="form-control" name="line_total_preview" readonly>
+                      </div>
+                      <div class="col-12 col-lg-5">
+                        <label class="form-label">Item Name</label>
+                        <input class="form-control" name="line_name_snapshot" readonly>
+                      </div>
+                      <div class="col-12 col-lg-5">
+                        <label class="form-label">Notes</label>
+                        <input class="form-control" name="line_notes" placeholder="Optional note">
+                      </div>
+                      <div class="col-12 col-lg-2 text-end">
+                        <button type="button" class="btn btn-outline-danger w-100" data-pr-remove-line>Remove</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <div class="col-12 d-flex justify-content-between align-items-center gap-3">
+              <div class="text-muted small">Saved requests keep a partner/address snapshot even if the partner record changes later.</div>
+              <button class="btn btn-primary px-4">Create Request</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Recent Purchase Orders</h4>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-striped mb-0">
+            <thead>
+              <tr>
+                <th>Serial</th>
+                <th>Partner</th>
+                <th>Vendor</th>
+                <th>Status</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for po in purchase_orders %}
+                <tr>
+                  <td>{{ po.serial }}</td>
+                  <td>{{ po.partner.name if po.partner else 'Unassigned' }}</td>
+                  <td>{{ po.vendor_name }}</td>
+                  <td><span class="badge bg-light-success">{{ po.status }}</span></td>
+                  <td class="text-end">{{ "%.2f"|format(po.total_amount) }}</td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-4">No purchase orders found.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

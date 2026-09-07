@@ -1,0 +1,96 @@
+.select2-container .select2-selection--single {
+  min-height: 2.75rem;
+  border: 1px solid #dce4ea;
+  border-radius: 0.5rem;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  line-height: 2.65rem;
+  padding-left: 0.75rem;
+  color: #25396f;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 2.6rem;
+  right: 0.5rem;
+}
+
+.select2-dropdown {
+  border: 1px solid #dce4ea;
+  border-radius: 0.5rem;
+}
+
+.flash-message {
+  display: none;
+}
+
+.text-gray-500 {
+  color: #7b8598 !important;
+}
+
+.app-launcher-icon,
+.stats-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 1rem;
+  font-size: 1.35rem;
+  flex: 0 0 auto;
+}
+
+.app-launcher-icon i,
+.stats-icon i {
+  line-height: 1;
+}
+
+.app-launcher-icon {
+  margin-bottom: 0.75rem;
+}
+
+.card .app-launcher-icon {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
+}
+
+.sidebar-brand {
+  min-width: 0;
+  max-width: calc(100% - 3rem);
+}
+
+.sidebar-brand-logo {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+}
+
+.sidebar-brand-text {
+  min-width: 0;
+}
+
+.sidebar-brand-name {
+  font-size: 1.1rem;
+  line-height: 1.1;
+  font-weight: 700;
+  color: #25396f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-brand-subtitle {
+  display: block;
+  font-size: 0.8rem;
+  color: #7b8598;
+  white-space: nowrap;
+}
+
+.sidebar-toolbar {
+  flex: 0 0 auto;
+}

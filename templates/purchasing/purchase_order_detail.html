@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>Purchase Order {{ po.serial }}</h3>
+  <p class="text-subtitle text-muted">Review the order, approve it, or mark it purchased from one clean screen.</p>
+{% endblock %}
+{% block page_actions %}
+  <div class="d-flex justify-content-md-end gap-2">
+    <span class="badge bg-light-primary align-self-start">{{ po.status }}</span>
+  </div>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-xl-4">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">Order Summary</h4>
+        <span class="badge bg-light-primary">{{ po.status }}</span>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-5 text-muted">Serial</dt>
+          <dd class="col-7">{{ po.serial }}</dd>
+          <dt class="col-5 text-muted">Partner</dt>
+          <dd class="col-7">{{ po.partner.name if po.partner else po.vendor_name }}</dd>
+          <dt class="col-5 text-muted">Vendor name</dt>
+          <dd class="col-7">{{ po.vendor_name }}</dd>
+          <dt class="col-5 text-muted">Total</dt>
+          <dd class="col-7 fw-semibold">{{ "%.2f"|format(po.total_amount) }}</dd>
+          <dt class="col-5 text-muted">Linked PR</dt>
+          <dd class="col-7">
+            {% if po.requisition %}
+              <a href="{{ url_for('purchasing.requisition_detail', requisition_id=po.requisition.id) }}">{{ po.requisition.serial }}</a>
+            {% else %}
+              <span class="text-muted">None</span>
+            {% endif %}
+          </dd>
+        </dl>
+        <div class="d-grid gap-2 mt-4">
+          <a class="btn btn-outline-secondary" href="{{ url_for('purchasing.purchase_orders') }}">Back to list</a>
+          {% if po.status in ["Draft", "Confirmed"] %}
+            <form method="post" action="{{ url_for('purchasing.approve_purchase_order', po_id=po.id) }}" data-confirm="Approve {{ po.serial }}?">
+              <button class="btn btn-outline-primary w-100">Approve</button>
+            </form>
+          {% endif %}
+          {% if po.status in ["Draft", "Confirmed", "Approved"] %}
+            <form method="post" action="{{ url_for('purchasing.purchase_purchase_order', po_id=po.id) }}" data-confirm="Mark {{ po.serial }} as purchased and done?">
+              <button class="btn btn-primary w-100">Purchase?</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h4 class="card-title mb-0">Item Lines</h4>
+        <span class="text-muted">{{ po.line_items|length }} line(s)</span>
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Product</th>
+              <th class="text-end">Qty</th>
+              <th class="text-end">Unit Price</th>
+              <th class="text-end">Line Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line in po.line_items %}
+              <tr>
+                <td>{{ line.product.sku if line.product else '-' }}</td>
+                <td>{{ line.product.name if line.product else 'Unknown product' }}</td>
+                <td class="text-end">{{ "%.2f"|format(line.quantity) }}</td>
+                <td class="text-end">{{ "%.4f"|format(line.unit_price) }}</td>
+                <td class="text-end fw-semibold">{{ "%.2f"|format(line.line_total) }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="5" class="text-center text-muted py-4">No line items found.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ app_name }}{% if title %} - {{ title }}{% endif %}</title>
+  <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/x-icon">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mazer/assets/compiled/css/app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mazer/assets/compiled/css/app-dark.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='mazer/assets/compiled/css/iconly.css') }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css', v=config.ASSET_VERSION) }}">
+</head>
+<body>
+  <script src="{{ url_for('static', filename='mazer/assets/static/js/initTheme.js') }}"></script>
+  <div id="app">
+    <div id="sidebar">
+      {% include "partials/_sidebar.html" %}
+    </div>
+
+    <div id="main" class="layout-navbar navbar-fixed">
+      {% include "partials/_navbar.html" %}
+      <div id="main-content">
+        <div class="page-heading">
+          <div class="page-title">
+            <div class="row">
+              <div class="col-12 col-md-6 order-md-1 order-last">
+                {% block page_heading %}
+                  <h3>{{ title or "Dashboard" }}</h3>
+                {% endblock %}
+              </div>
+              <div class="col-12 col-md-6 order-md-2 order-first">
+                {% block page_actions %}{% endblock %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <section class="section">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} flash-message d-none" role="alert" data-flash-category="{{ category }}" data-flash-message="{{ message|e }}">{{ message }}</div>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+          {% block content %}{% endblock %}
+        </section>
+      </div>
+      {% include "partials/_footer.html" %}
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="{{ url_for('static', filename='mazer/assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='mazer/assets/static/js/components/dark.js') }}"></script>
+  <script src="{{ url_for('static', filename='mazer/assets/compiled/js/app.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui.js', v=config.ASSET_VERSION) }}"></script>
+</body>
+</html>

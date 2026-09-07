@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>My Profile</h3>
+  <p class="text-subtitle text-muted">Update your account details and password.</p>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-xl-7">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Profile Details</h4>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Full name</label>
+            <input class="form-control" name="full_name" value="{{ current_user.full_name }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input class="form-control" type="email" name="email" value="{{ current_user.email }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">New password</label>
+            <input class="form-control" type="password" name="new_password" placeholder="Leave blank to keep current password">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Confirm password</label>
+            <input class="form-control" type="password" name="confirm_password">
+          </div>
+          <div class="col-12">
+            <button class="btn btn-primary">Save changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-5">
+    <div class="card">
+      <div class="card-header">
+        <h4 class="card-title">Access Summary</h4>
+      </div>
+      <div class="card-body">
+        <p class="mb-2 text-muted">Roles</p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          {% for role in current_user.roles %}
+            <span class="badge bg-light-primary">{{ role.name }}</span>
+          {% else %}
+            <span class="text-muted">No roles assigned</span>
+          {% endfor %}
+        </div>
+        <p class="mb-2 text-muted">Permissions</p>
+        <div class="d-flex flex-wrap gap-2">
+          {% for permission in current_user.permission_names|list|sort %}
+            <span class="badge bg-light-secondary text-dark">{{ permission }}</span>
+          {% else %}
+            <span class="text-muted">No permissions assigned</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

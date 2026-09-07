@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>Roles & Permissions</h3>
+  <p class="text-subtitle text-muted">Manage access by role and keep permissions in one dedicated screen.</p>
+{% endblock %}
+{% block page_actions %}
+  <div class="d-flex justify-content-md-end gap-2 flex-wrap">
+    <span class="badge bg-light-primary align-self-start">Permissions: {{ permissions|length }}</span>
+    {% if can_manage_roles %}
+      <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#createRoleModal">
+        Create Role
+      </button>
+    {% endif %}
+  </div>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-xl-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <h4 class="card-title mb-0">Available Permissions</h4>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">Use these permissions when configuring a role.</p>
+        <div class="d-flex flex-wrap gap-2">
+          {% for permission in permissions %}
+            <span class="badge bg-light-primary">{{ permission.name }}</span>
+          {% else %}
+            <span class="text-muted">No permissions matched your search.</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-8">
+    <div class="card">
+      <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <h4 class="card-title mb-0">Role Directory</h4>
+          <small class="text-muted">Edit role names and assign permissions from the table below.</small>
+        </div>
+        <form method="get" class="d-flex gap-2 flex-wrap">
+          <input class="form-control" name="role_search" value="{{ role_search }}" placeholder="Search roles">
+          <input class="form-control" name="permission_search" value="{{ permission_search }}" placeholder="Search permissions">
+          <button class="btn btn-outline-primary">Search</button>
+        </form>
+      </div>
+      <div class="card-body">
+        {% if can_manage_roles %}
+          {% for role in roles %}
+            <div class="border rounded-3 p-3 mb-3">
+              <div class="row g-3 align-items-center">
+                <div class="col-12 col-lg-4">
+                  <div class="fw-semibold">{{ role.name }}</div>
+                  <small class="text-muted">{{ role.permissions|length }} permission(s)</small>
+                </div>
+                <div class="col-12 col-lg-6">
+                  <div class="d-flex flex-wrap gap-2">
+                    {% for permission in role.permissions %}
+                      <span class="badge bg-light-primary">{{ permission.name }}</span>
+                    {% else %}
+                      <span class="text-muted">No permissions assigned</span>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="col-12 col-lg-2 text-lg-end">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editRoleModal"
+                    data-role-modal-trigger
+                    data-role-id="{{ role.id }}"
+                    data-role-name="{{ role.name|e }}"
+                    data-role-permission-ids="{{ role.permissions | map(attribute='id') | list | join(',') }}"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="text-center text-muted py-4">No roles found.</div>
+          {% endfor %}
+        {% else %}
+          <div class="alert alert-info mb-0">You can view roles and permissions, but this account cannot edit them.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_manage_roles %}
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-0">Edit Role</h5>
+          <small class="text-muted">Adjust the role name and permission set in a spacious modal.</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" class="row g-3" data-confirm="Save changes to this role?">
+          <input type="hidden" name="action" value="update_role">
+          <input type="hidden" name="role_id" id="editRoleId">
+          <div class="col-12 col-md-5">
+            <label class="form-label">Role name</label>
+            <input class="form-control" name="name" id="editRoleName">
+          </div>
+          <div class="col-12 col-md-7">
+            <label class="form-label">Permissions</label>
+            <div class="row g-2 row-cols-1 row-cols-md-2 row-cols-xl-2" id="editRolePermissions">
+              {% for permission in all_permissions %}
+                <div class="col">
+                  <div class="form-check border rounded-3 px-3 py-2 h-100 bg-light d-flex align-items-start gap-2">
+                    <input class="form-check-input mt-1" type="checkbox" name="permission_ids" value="{{ permission.id }}" id="edit-role-perm-{{ permission.id }}">
+                    <label class="form-check-label text-break" for="edit-role-perm-{{ permission.id }}">{{ permission.name }}</label>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-12 text-end">
+            <button class="btn btn-primary">Save role</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="createRoleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title mb-0">Create Role</h5>
+          <small class="text-muted">Create a role without shrinking the role directory.</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" class="row g-3" data-confirm="Create this role?">
+          <input type="hidden" name="action" value="create_role">
+          <div class="col-12 col-md-8">
+            <label class="form-label">Role name</label>
+            <input class="form-control" name="role_name" placeholder="New role name">
+          </div>
+          <div class="col-12 col-md-4 d-flex align-items-end">
+            <button class="btn btn-primary w-100">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if can_view_permissions %}
+  <div class="row g-4 mt-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h4 class="card-title mb-0">Permission Matrix</h4>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            {% set matrix = {
+              'Inventory': ['inventory:view', 'inventory:receive', 'inventory:tag'],
+              'Purchasing': ['purchasing:view', 'purchasing:create', 'purchasing:approve', 'purchasing:partner_manage'],
+              'Accounting': ['accounting:view', 'accounting:post_ledger', 'accounting:receive_reports'],
+              'Administration': ['admin:settings', 'admin:manage_users', 'admin:manage_roles', 'admin:view_permissions']
+            } %}
+            {% for module, perms in matrix.items() %}
+              <div class="col-12 col-lg-6 col-xl-3">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                  <h6 class="mb-3">{{ module }}</h6>
+                  <div class="d-flex flex-wrap gap-2">
+                    {% for permission in perms %}
+                      <span class="badge bg-light-primary">{{ permission }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

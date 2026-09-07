@@ -1,0 +1,64 @@
+<div class="sidebar-wrapper active">
+  <div class="sidebar-header position-relative">
+    <div class="d-flex align-items-start justify-content-between gap-3">
+      <a href="{{ url_for('dashboard') }}" class="sidebar-brand text-decoration-none d-flex align-items-center gap-3">
+        <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="{{ app_name }}" class="sidebar-brand-logo">
+        <div class="sidebar-brand-text lh-sm">
+          <div class="sidebar-brand-name">{{ app_name }}</div>
+          <small class="sidebar-brand-subtitle">ERP workspace</small>
+        </div>
+      </a>
+      <div class="sidebar-toolbar d-flex align-items-center gap-2">
+        <div class="form-check form-switch fs-6 m-0">
+          <input class="form-check-input me-0" type="checkbox" id="toggle-dark" style="cursor: pointer">
+          <label class="form-check-label visually-hidden" for="toggle-dark">Toggle dark mode</label>
+        </div>
+        <div class="sidebar-toggler x">
+          <a href="#" class="sidebar-hide d-xl-none d-block" aria-label="Close sidebar"><i class="bi bi-x bi-middle"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-menu">
+    <ul class="menu">
+      {% set active_endpoint = request.endpoint or '' %}
+      {% for group in sidebar_groups %}
+        <li class="sidebar-title">{{ group['title'] }}</li>
+        {% for item in group['items'] %}
+          {% if not item.permission or (current_user.is_authenticated and current_user.has_permission(item.permission)) %}
+            {% set is_active = false %}
+            {% if item.endpoint == 'dashboard' %}
+              {% set is_active = active_endpoint == 'dashboard' %}
+            {% elif item.endpoint == 'purchasing.dashboard' %}
+              {% set is_active = active_endpoint in ['purchasing.dashboard', 'purchasing.requisition_detail', 'purchasing.confirm_requisition'] %}
+            {% elif item.endpoint == 'purchasing.purchase_orders' %}
+              {% set is_active = active_endpoint in ['purchasing.purchase_orders', 'purchasing.purchase_order_detail', 'purchasing.approve_purchase_order', 'purchasing.purchase_purchase_order'] %}
+            {% else %}
+              {% set is_active = active_endpoint == item.endpoint %}
+            {% endif %}
+            <li class="sidebar-item {% if is_active %}active{% endif %}">
+              <a href="{{ url_for(item.endpoint) }}" class="sidebar-link">
+                <i class="bi {{ item.icon }}"></i>
+                <span>{{ item.label }}</span>
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+
+      <li class="sidebar-title">Account</li>
+      <li class="sidebar-item {% if active_endpoint == 'profile' %}active{% endif %}">
+        <a href="{{ url_for('profile') }}" class="sidebar-link">
+          <i class="bi bi-person"></i>
+          <span>Profile</span>
+        </a>
+      </li>
+      <li class="sidebar-item">
+        <a href="{{ url_for('logout') }}" class="sidebar-link">
+          <i class="bi bi-box-arrow-right"></i>
+          <span>Logout</span>
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>

@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block page_heading %}
+  <h3>Products</h3>
+  <p class="text-subtitle text-muted">Maintain the catalog used by purchase requests, receiving, and supplier tagging.</p>
+{% endblock %}
+{% block page_actions %}
+  {% if current_user.has_permission('inventory:view') %}
+    <div class="d-flex justify-content-md-end">
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">New Product</button>
+    </div>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Products</small>
+            <h4 class="mb-0">{{ stats.products }}</h4>
+          </div>
+          <div class="stats-icon purple"><i class="bi bi-box-seam"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Tagged</small>
+            <h4 class="mb-0">{{ stats.tagged }}</h4>
+          </div>
+          <div class="stats-icon green"><i class="bi bi-tag"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Purchase Items</small>
+            <h4 class="mb-0">{{ stats.purchase_items }}</h4>
+          </div>
+          <div class="stats-icon blue"><i class="bi bi-bag-check"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <small class="text-muted">Suppliers</small>
+            <h4 class="mb-0">{{ stats.suppliers }}</h4>
+          </div>
+          <div class="stats-icon red"><i class="bi bi-truck"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <form method="get" class="row g-3 align-items-center">
+      <div class="col-12 col-md-6">
+        <input class="form-control" name="search" value="{{ search }}" placeholder="Search SKU or product name">
+      </div>
+      <div class="col-12 col-md-4">
+        <select class="form-select" name="partner_id">
+          <option value="">All preferred suppliers</option>
+          {% for partner in partners %}
+            <option value="{{ partner.id }}" {% if partner_id|string == partner.id|string %}selected{% endif %}>{{ partner.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-2">
+        <button class="btn btn-primary w-100">Search</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h4 class="card-title mb-0">Product Catalog</h4>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped mb-0">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Product</th>
+            <th>UoM</th>
+            <th>Tag</th>
+            <th>Preferred Supplier</th>
+            <th class="text-end">Stock</th>
+            <th class="text-end">Avg Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for product in products %}
+            <tr>
+              <td class="fw-semibold">{{ product.sku }}</td>
+              <td>{{ product.name }}</td>
+              <td>{{ product.uom }}</td>
+              <td><span class="badge bg-light-primary">{{ product.tag_kind|replace("_", " ")|title }}</span></td>
+              <td>{{ product.assigned_partner.name if product.assigned_partner else "Unassigned" }}</td>
+              <td class="text-end">{{ "%.2f"|format(product.current_stock) }}</td>
+              <td class="text-end">{{ "%.4f"|format(product.average_cost) }}</td>
+            </tr>
+          {% else %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No products found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form method="post" data-confirm="Create this product catalog item?">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title mb-0">Create Product</h5>
+            <small class="text-muted">Add a catalog item once, then reuse it in PR lines and tags.</small>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="action" value="create_product">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">SKU</label>
+              <input class="form-control" name="sku" placeholder="SKU-3001" required>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Name</label>
+              <input class="form-control" name="name" placeholder="Product name" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">UoM</label>
+              <input class="form-control" name="uom" placeholder="Box" required>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Tag</label>
+              <select class="form-select" name="tag_kind">
+                <option value="purchase">Purchase</option>
+                <option value="reserved">Reserved</option>
+                <option value="return_to_supplier">Return</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Preferred Supplier</label>
+              <select class="form-select" name="assigned_partner_id">
+                <option value="">No supplier</option>
+                {% for partner in partners %}
+                  <option value="{{ partner.id }}">{{ partner.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Current Stock</label>
+              <input class="form-control" name="current_stock" type="number" step="0.01" value="0">
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Avg Cost</label>
+              <input class="form-control" name="average_cost" type="number" step="0.0001" value="0">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary">Create product</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
